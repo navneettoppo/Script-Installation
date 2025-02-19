@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
+
+# Update and upgrade the system
+echo "Updating and upgrading the system..."
+sudo apt update && sudo apt upgrade -y
+
+# Install Docker if not already installed
+if command_exists docker; then
+    echo "Docker is already installed: $(docker --version)"
+else
+    echo "Installing Docker..."
+    sudo apt install -y docker.io
+    echo "Docker installed: $(docker --version)"
+fi
+
+# Add Kubernetes apt repository if not already added
+if [ ! -f /etc/apt/sources.list.d/kubernetes.list ]; then
+    echo "Adding Kubernetes apt repository..."
+    sudo mkdir -p /etc/apt/keyrings
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+else
+    echo "Kubernetes apt repository is already added."
+fi
+
+# Install Kubernetes components if not already installed
+if command_exists kubelet && command_exists kubeadm && command_exists kubectl; then
+    echo "Kubernetes components are already installed: kubelet $(kubelet --version), kubeadm $(kubeadm version -o short), kubectl $(kubectl version --client -o json | jq -r '.clientVersion.gitVersion')"
+else
+    echo "Installing Kubernetes components..."
+    sudo apt update
+    sudo apt install -y kubelet kubeadm kubectl
+    sudo apt-mark hold kubelet kubeadm kubectl
+    echo "Kubernetes components installed successfully."
+fi
+
+# Disable swap if not already disabled
+if sudo swapon --show | grep -q 'swap'; then
+    echo "Disabling swap..."
+    sudo swapoff -a
+    sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+    echo "Swap disabled."
+else
+    echo "Swap is already disabled."
+fi
+
+echo "All steps completed successfully."
