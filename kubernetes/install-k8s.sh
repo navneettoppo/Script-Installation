@@ -15,6 +15,10 @@ if command_exists docker; then
 else
     echo "Installing Docker..."
     sudo apt install -y docker.io
+    if [ $? -ne 0 ]; then
+        echo "Error installing Docker. Exiting."
+        exit 1
+    fi
     echo "Docker installed: $(docker --version)"
 fi
 
@@ -34,7 +38,11 @@ if command_exists kubelet && command_exists kubeadm && command_exists kubectl; t
 else
     echo "Installing Kubernetes components..."
     sudo apt update
-    sudo apt install -y kubelet kubeadm kubectl
+    sudo apt install -y kubelet kubeadm kubectl --allow-change-held-packages
+    if [ $? -ne 0 ]; then
+        echo "Error installing Kubernetes components. Exiting."
+        exit 1
+    fi
     sudo apt-mark hold kubelet kubeadm kubectl
     echo "Kubernetes components installed successfully."
 fi
