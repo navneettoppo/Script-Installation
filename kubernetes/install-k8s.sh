@@ -50,3 +50,11 @@ else
 fi
 
 echo "All steps completed successfully."
+
+# Check if the first script executed successfully
+if [ $? -eq 0 ]; then
+    echo "First script executed successfully. Running the next script..."
+    curl -sSL https://raw.githubusercontent.com/navneettoppo/Script-Installation/refs/heads/main/kubernetes/setup-k8s.sh | bash
+else
+    echo "First script failed. Not running the next script."
+fi
