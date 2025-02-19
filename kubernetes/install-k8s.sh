@@ -5,10 +5,24 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Checking if any pre inistalled 
+echo "Updating and upgrading the system..."
+ls /usr/bin/kubeadm
+ls /usr/bin/kubectl
+sudo find / -name kubeadm
+sudo find / -name kubectl
+
+sudo apt-get purge -y kubeadm kubectl kubelet kubernetes-cni kube*
+sudo apt-get autoremove -y
+
 # Update and upgrade the system
 echo "Updating and upgrading the system..."
 sudo apt update && sudo apt upgrade -y
+sudo apt update
+sudo apt install -y kubelet kubeadm kubectl --allow-change-held-packages
+sudo apt-mark hold kubelet kubeadm kubectl
 
+# Install Docker if not already installed
 # Install Docker if not already installed
 if command_exists docker; then
     echo "Docker is already installed: $(docker --version)"
