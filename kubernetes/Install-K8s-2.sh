@@ -1,125 +1,177 @@
 #!/bin/bash
-
 # Set script name and version
 SCRIPT_NAME="k8s-install"
-VERSION="2.0.0"
+VERSION="2.1.0"
 
-# Enable error handling
+# Enable error handling with colors
 set -eo pipefail
-trap 'echo -e "\nERROR: Script failed at line $LINENO\n$BASH_COMMAND\n$" ERR
+trap 'echo -e "\nERROR: Script failed at line $LINENO\n$BASH_COMMAND\n$" >&2' ERR
 trap 'echo -e "\nScript interrupted by user\n"' INT
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # Load configuration
 CONFIG_FILE="k8s-install-config.yml"
-LOAD_CONFIG() {
-    if [ -f "$CONFIG_FILE" ]; then
-        K8S_VERSION=$(yq e '.kubernetes.version' "$CONFIG_FILE")
-        DOCKER_REPO=$(yq e '.docker.repository' "$CONFIG_FILE")
-        POD_NETWORK=$(yq e '.network.pod_network' "$CONFIG_FILE")
-        DISABLE_SWAP=$(yq e '.system.swap.disabled' "$CONFIG_FILE")
-    fi
-}
+K8S_VERSION="1.28.0"
+DOCKER_REPO="https://download.docker.com/linux/ubuntu/gpg"
+POD_NETWORK="flannel"
+DISABLE_SWAP="true"
 
 # Check if command exists
 command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Show help
+SHOW_HELP() {
+    echo -e "${BLUE}Usage:$NC $SCRIPT_NAME [options]"
+    echo -e ""
+    echo -e "${BLUE}Options:$NC"
+    echo -e "  --config-file    Path to configuration file"
+    echo -e "  --help           Show this help message"
+    echo -e "  --version       Show script version"
+    echo -e ""
+    echo -e "${BLUE}Examples:$NC"
+    echo -e "  $SCRIPT_NAME --config-file ./your-config.yml"
+    echo -e "  $SCRIPT_NAME --help"
+    echo -e "  $SCRIPT_NAME --version"
+}
+
+# Check if running as root
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}ERROR: This script must be run as root${NC}" >&2
+    SHOW_HELP
+    exit 1
+fi
+
+# Load configuration
+LOAD_CONFIG() {
+    if [ -f "$CONFIG_FILE" ]; then
+        echo -e "${YELLOW}Loading configuration from $CONFIG_FILE...${NC}"
+        if ! command_exists yq; then
+            echo -e "${RED}ERROR: yq command not found. Please install it first.${NC}" >&2
+            exit 1
+        fi
+        K8S_VERSION=$(yq e '.kubernetes.version' "$CONFIG_FILE")
+        DOCKER_REPO=$(yq e '.docker.repository' "$CONFIG_FILE")
+        POD_NETWORK=$(yq e '.network.pod_network' "$CONFIG_FILE")
+        DISABLE_SWAP=$(yq e '.system.swap.disabled' "$CONFIG_FILE")
+    else
+        echo -e "${YELLOW}No configuration file found. Using defaults:${NC}"
+        echo -e "Kubernetes Version: $K8S_VERSION"
+        echo -e "Docker Repository: $DOCKER_REPO"
+        echo -e "Pod Network: $POD_NETWORK"
+        echo -e "Swap Disabled: $DISABLE_SWAP"
+    fi
+}
+
 # Uninstall old Kubernetes components
 UNINSTALL_OLD() {
-    echo -e "\nUninstalling old Kubernetes components..."
+    echo -e "${BLUE}\nUninstalling old Kubernetes components...${NC}"
     sudo apt-get purge -y kubeadm kubectl kubelet kubernetes-cni kube*
     sudo apt-get autoremove -y
-    echo -e "Old Kubernetes components uninstalled."
+    echo -e "${GREEN}Old Kubernetes components uninstalled.${NC}"
 }
 
 # Update and upgrade system
 UPDATE_SYSTEM() {
-    echo -e "\nUpdating and upgrading the system..."
+    echo -e "${BLUE}\nUpdating and upgrading the system...${NC}"
     sudo apt update && sudo apt upgrade -y
-    sudo apt update
-    echo -e "System updated successfully."
+    sudo apt-get update
+    echo -e "${GREEN}System updated successfully.${NC}"
 }
 
 # Install Docker
 INSTALL_DOCKER() {
-    echo -e "\nInstalling Docker..."
+    echo -e "${BLUE}\nInstalling Docker...${NC}"
     
     if command_exists docker; then
-        echo -e "Docker is already installed: $(docker --version)"
+        echo -e "${YELLOW}Docker is already installed: $(docker --version)${NC}"
         return
     fi
 
-    echo -e "Adding Docker repository..."
+    echo -e "${BLUE}Adding Docker repository...${NC}"
     sudo apt-get update
     sudo apt-get install -y ca-certificates curl
     sudo install -m 0755 -d /etc/apt/keyrings
     sudo curl -fsSL "$DOCKER_REPO" -o /etc/apt/keyrings/docker.asc
     sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-    echo -e "Updating package lists..."
+    echo -e "${BLUE}Updating package lists...${NC}"
     sudo apt-get update
 
-    echo -e "Installing Docker components..."
+    echo -e "${BLUE}Installing Docker components...${NC}"
     sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
     if [ $? -ne 0 ]; then
-        echo -e "ERROR: Failed to install Docker components"
+        echo -e "${RED}ERROR: Failed to install Docker components${NC}" >&2
         exit 1
     fi
 
-    echo -e "Starting Docker service..."
+    echo -e "${BLUE}Starting Docker service...${NC}"
     sudo systemctl start docker
     if [ $? -ne 0 ]; then
-        echo -e "ERROR: Failed to start Docker service"
+        echo -e "${RED}ERROR: Failed to start Docker service${NC}" >&2
         exit 1
     fi
 
-    echo -e "Docker installed successfully: $(docker --version)"
+    echo -e "${GREEN}Docker installed successfully: $(docker --version)${NC}"
 }
 
 # Install Kubernetes components
 INSTALL_K8S() {
-    echo -e "\nInstalling Kubernetes components..."
+    echo -e "${BLUE}\nInstalling Kubernetes components...${NC}"
     
     if command_exists kubelet && command_exists kubeadm && command_exists kubectl; then
-        echo -e "Kubernetes components are already installed:"
+        echo -e "${YELLOW}Kubernetes components are already installed:${NC}"
         echo -e "kubelet: $(kubelet --version)"
         echo -e "kubeadm: $(kubeadm version -o short)"
         echo -e "kubectl: $(kubectl version --client -o json | jq -r '.clientVersion.gitVersion')"
         return
     fi
 
-    echo -e "Adding Kubernetes repository..."
+    echo -e "${BLUE}Adding Kubernetes repository...${NC}"
     sudo mkdir -p /etc/apt/keyrings
     sudo curl -fsSL "https://pkgs.k8s.io/core:/stable:/v$K8S_VERSION/deb/Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-    echo -e "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v$K8S_VERSION/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-
-    echo -e "Updating package lists..."
+    echo -e "${BLUE}Updating package lists...${NC}"
     sudo apt-get update
 
-    echo -e "Installing Kubernetes components..."
+    echo -e "${BLUE}Installing Kubernetes components...${NC}"
     sudo apt-get install -y kubelet kubeadm kubectl --allow-change-held-packages
     if [ $? -ne 0 ]; then
-        echo -e "ERROR: Failed to install Kubernetes components"
+        echo -e "${RED}ERROR: Failed to install Kubernetes components${NC}" >&2
         exit 1
     fi
 
     sudo apt-mark hold kubelet kubeadm kubectl
-    echo -e "Kubernetes components installed successfully."
+    echo -e "${GREEN}Kubernetes components installed successfully.${NC}"
 }
 
 # Disable swap
 DISABLE_SWAP() {
-    echo -e "\nChecking swap status..."
+    echo -e "${BLUE}\nChecking swap status...${NC}"
     
     if sudo swapon --show | grep -q 'swap'; then
-        echo -e "Disabling swap..."
+        echo -e "${BLUE}Disabling swap...${NC}"
         sudo swapoff -a
         sudo sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
-        echo -e "Swap disabled."
+        echo -e "${GREEN}Swap disabled.${NC}"
     else
-        echo -e "Swap is already disabled."
+        echo -e "${YELLOW}Swap is already disabled.${NC}"
     fi
+}
+
+# Show configuration
+SHOW_CONFIG() {
+    echo -e "${BLUE}\nCurrent Configuration:${NC}"
+    echo -e "Kubernetes Version: $K8S_VERSION"
+    echo -e "Docker Repository: $DOCKER_REPO"
+    echo -e "Pod Network: $POD_NETWORK"
+    echo -e "Swap Status: $DISABLE_SWAP"
 }
 
 # Main execution
@@ -151,15 +203,15 @@ main() {
 
     # Show menu
     while true; do
-        echo -e "\n$SCRIPT_NAME v$VERSION"
+        echo -e "\n${BLUE}$SCRIPT_NAME v$VERSION${NC}"
         echo -e "---------------------"
-        echo -e "1. Uninstall Old Components"
-        echo -e "2. Update System"
-        echo -e "3. Install Docker"
-        echo -e "4. Install Kubernetes"
-        echo -e "5. Disable Swap"
-        echo -e "6. Show Configuration"
-        echo -e "7. Exit"
+        echo -e "${BLUE}1.${NC} Uninstall Old Components"
+        echo -e "${BLUE}2.${NC} Update System"
+        echo -e "${BLUE}3.${NC} Install Docker"
+        echo -e "${BLUE}4.${NC} Install Kubernetes"
+        echo -e "${BLUE}5.${NC} Disable Swap"
+        echo -e "${BLUE}6.${NC} Show Configuration"
+        echo -e "${BLUE}7.${NC} Exit"
         read -p "Choose an option: " CHOICE
 
         case "$CHOICE" in
@@ -179,44 +231,18 @@ main() {
                 DISABLE_SWAP
                 ;;
             6)
-                echo -e "\nCurrent Configuration:"
-                echo -e "Kubernetes Version: $K8S_VERSION"
-                echo -e "Docker Repository: $DOCKER_REPO"
-                echo -e "Pod Network: $POD_NETWORK"
-                echo -e "Swap Status: ${DISABLE_SWAP:-true}"
+                SHOW_CONFIG
                 ;;
             7)
-                echo -e "Exiting..."
+                echo -e "${BLUE}Exiting...${NC}"
                 exit 0
                 ;;
             *)
-                echo -e "Invalid choice. Please try again."
+                echo -e "${RED}Invalid choice. Please try again.${NC}"
                 ;;
         esac
     done
 }
 
-# Show help
-SHOW_HELP() {
-    echo -e "Usage: $SCRIPT_NAME [options]"
-    echo -e ""
-    echo -e "Options:"
-    echo -e "  --config-file    Path to configuration file"
-    echo -e "  --help           Show this help message"
-    echo -e "  --version       Show script version"
-}
-
 # Start main function
 main "$@"
-
-# Example configuration file content:
-# vi $CONFIG_FILE
-# kubernetes:
-#   version: "1.28"
-# docker:
-#   repository: "https://download.docker.com/linux/ubuntu/gpg"
-# network:
-#   pod_network: "flannel"
-# system:
-#   swap:
-#     disabled: true
