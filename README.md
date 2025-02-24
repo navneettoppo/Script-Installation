@@ -33,7 +33,7 @@ curl -sSL https://raw.githubusercontent.com/navneettoppo/Script-Installation/ref
 
 # One-liner installation (Worker Node)
 curl -sSL https://raw.githubusercontent.com/navneettoppo/Script-Installation/refs/heads/main/kubernetes/Setup-K8s-2.sh | bash -s -- --role worker
-
+```
 
 ## Description
 This repository contains two main scripts:
@@ -59,19 +59,21 @@ These scripts are designed to automate the entire Kubernetes setup process, maki
 ## Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/kubernetes-setup.git
-cd kubernetes-setup
-Make the scripts executable:
-chmod +x Install-K8s.sh Setup-K8s.sh
-Usage
-Running Install-K8s.sh
-sudo ./Install-K8s.sh
-Running Setup-K8s.sh
-sudo ./Setup-K8s.sh
-Using Configuration File
+  git clone https://github.com/yourusername/kubernetes-setup.git
+  cd kubernetes-setup
+  Make the scripts executable:
+  chmod +x Install-K8s.sh Setup-K8s.sh
+  Usage
+  Running Install-K8s.sh
+  sudo ./Install-K8s.sh
+  Running Setup-K8s.sh
+  sudo ./Setup-K8s.sh
+```
+
+# Using Configuration File
 Create a configuration file:
-vi config.yml
-Add your custom settings:
+``` vi config.yml
+
 kubernetes:
   version: "1.28"
 docker:
@@ -81,8 +83,11 @@ network:
 system:
   swap:
     disabled: true
+```
+
 Run the script with the configuration file:
-sudo ./Install-K8s.sh --config-file config.yml
+```sudo ./Install-K8s.sh --config-file config.yml ```
+
 Configuration
 The scripts use a YAML configuration file for customizable settings:
 
