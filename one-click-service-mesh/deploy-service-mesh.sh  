@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# Variables
+HELM_CHART_NAME="service-mesh"
+HELM_CHART_DIR="./istio-mesh-chart"
+NAMESPACE="service-mesh-ns"
+SAMPLE_APP="bookinfo"
+
+# Step 1: Create Namespace
+echo "Creating namespace $NAMESPACE..."
+kubectl create namespace $NAMESPACE
+
+# Step 2: Add Istio Helm Repository
+echo "Adding Istio Helm repository..."
+helm repo add istio https://istio-release.storage.googleapis.com/charts
+helm repo update
+
+# Step 3: Install Istio Base
+echo "Installing Istio Base..."
+helm install istio-base istio/base -n $NAMESPACE
+
+# Step 4: Install Istio Discovery (istiod)
+echo "Installing Istio Discovery (istiod)..."
+helm install istiod istio/istiod -n $NAMESPACE --wait
+
+# Step 5: Install Istio Ingress Gateway
+echo "Installing Istio Ingress Gateway..."
+helm install istio-ingressgateway istio/gateway -n $NAMESPACE --wait
+
+# Step 6: Enable Automatic Sidecar Injection
+echo "Enabling automatic sidecar injection for namespace $NAMESPACE..."
+kubectl label namespace $NAMESPACE istio-injection=enabled
+
+# Step 7: Deploy Observability Tools
+echo "Deploying Observability Tools..."
+
+# Prometheus
+echo "Installing Prometheus..."
+helm install prometheus prometheus-community/prometheus -n $NAMESPACE --wait
+
+# Grafana
+echo "Installing Grafana..."
+helm install grafana grafana/grafana -n $NAMESPACE --wait
+
+# Jaeger
+echo "Installing Jaeger..."
+helm install jaeger jaegertracing/jaeger -n $NAMESPACE --wait
+
+# Kiali
+echo "Installing Kiali..."
+helm install kiali kiali/kiali -n $NAMESPACE --wait
+
+# Step 8: Deploy Sample Microservices Application
+echo "Deploying Sample Microservices Application ($SAMPLE_APP)..."
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.14/samples/$SAMPLE_APP/platform/kube/$SAMPLE_APP.yaml -n $NAMESPACE
+
+# Step 9: Verify Deployment
+echo "Verifying Deployment..."
+kubectl get pods -n $NAMESPACE
+
+# Step 10: Access Dashboards
+echo "Accessing Dashboards..."
+echo "Prometheus: http://localhost:9090"
+echo "Grafana: http://localhost:3000"
+echo "Jaeger: http://localhost:16686"
+echo "Kiali: http://localhost:20001"
+
+# Port-forwarding to access dashboards
+kubectl port-forward svc/prometheus-server 9090:9090 -n $NAMESPACE &
+kubectl port-forward svc/grafana 3000:3000 -n $NAMESPACE &
+kubectl port-forward svc/jaeger-query 16686:16686 -n $NAMESPACE &
+kubectl port-forward svc/kiali 20001:20001 -n $NAMESPACE &
+
+echo "Service Mesh Deployment Completed Successfully!"

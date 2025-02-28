@@ -1,0 +1,95 @@
+# Istio Configuration
+istio:
+  enabled: true
+  namespace: service-mesh-ns
+  components:
+    base:
+      enabled: true
+    istiod:
+      enabled: true
+    ingressGateway:
+      enabled: true
+      name: istio-ingressgateway
+      namespace: service-mesh-ns
+      autoscaleEnabled: true
+      resources:
+        requests:
+          cpu: "100m"
+          memory: "128Mi"
+        limits:
+          cpu: "500m"
+          memory: "512Mi"
+
+# Prometheus Configuration
+prometheus:
+  enabled: true
+  namespace: service-mesh-ns
+  server:
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+    retention: "7d"
+
+# Grafana Configuration
+grafana:
+  enabled: true
+  namespace: service-mesh-ns
+  adminUser: "admin"
+  adminPassword: "admin"
+  persistence:
+    enabled: true
+    storageClassName: "microk8s-hostpath"
+    size: "1Gi"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+# Jaeger Configuration
+jaeger:
+  enabled: true
+  namespace: service-mesh-ns
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  storage:
+    type: "memory"
+
+# Kiali Configuration
+kiali:
+  enabled: true
+  namespace: service-mesh-ns
+  dashboard:
+    viewOnlyMode: false
+  auth:
+    strategy: "anonymous"
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+# Sample Application (BookInfo)
+bookinfo:
+  enabled: true
+  namespace: service-mesh-ns
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
