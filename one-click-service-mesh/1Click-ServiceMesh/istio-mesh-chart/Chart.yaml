@@ -3,3 +3,19 @@ name: istio-mesh-chart
 description: A Helm chart for One-Click Service Mesh Deployment
 version: 0.1.0
 appVersion: "1.0"
+dependencies:
+  - name: istio
+    version: "1.12.0"
+    repository: "https://istio-release.storage.googleapis.com/charts"
+  - name: kiali
+    version: "1.42.0"
+    repository: "https://kiali.org/helm-charts"
+  - name: grafana
+    version: "6.17.0"
+    repository: "https://grafana.github.io/helm-charts"
+  - name: prometheus
+    version: "14.11.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+  - name: jaeger
+    version: "0.58.0"
+    repository: "https://jaegertracing.github.io/helm-charts"
