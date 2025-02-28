@@ -1,0 +1,10 @@
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  name: istio-base
+  namespace: {{ .Release.Namespace }}
+spec:
+  profile: default
+  components:
+    base:
+      enabled: true

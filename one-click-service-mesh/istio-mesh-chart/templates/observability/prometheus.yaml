@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceAccountName: prometheus
+  resources:
+    requests:
+      memory: 400Mi
+  enableAdminAPI: false
+  retention: {{ .Values.prometheus.server.retention }}
