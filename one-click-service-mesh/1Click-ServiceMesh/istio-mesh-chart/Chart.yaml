@@ -4,9 +4,15 @@ description: A Helm chart for One-Click Service Mesh Deployment
 version: 0.1.0
 appVersion: "1.0"
 dependencies:
-  - name: istio
+  - name: istio-base
     version: "1.12.0"
-    repository: "https://istio-release.storage.googleapis.com/charts"
+    repository: "https://istio-release.storage.googleapis.com/releases/1.12.0/charts"
+  - name: istio-discovery
+    version: "1.12.0"
+    repository: "https://istio-release.storage.googleapis.com/releases/1.12.0/charts"
+  - name: istio-ingressgateway
+    version: "1.12.0"
+    repository: "https://istio-release.storage.googleapis.com/releases/1.12.0/charts"
   - name: kiali
     version: "1.42.0"
     repository: "https://kiali.org/helm-charts"
