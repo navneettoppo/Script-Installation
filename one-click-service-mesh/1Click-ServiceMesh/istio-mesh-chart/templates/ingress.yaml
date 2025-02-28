@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "istio-mesh-chart.fullname" . }}
+  labels:
+    {{- include "istio-mesh-chart.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: 80
+      targetPort: 8080
+  selector:
+    {{- include "istio-mesh-chart.selectorLabels" . | nindent 4 }}
+  # Add the mTLS configuration
+  annotations:
+    sidecar.istio.io/inject: "true"

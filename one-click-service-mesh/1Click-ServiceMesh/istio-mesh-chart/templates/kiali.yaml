@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kiali
+  namespace: {{ .Values.global.namespace }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kiali
+  template:
+    metadata:
+      labels:
+        app: kiali
+    spec:
+      containers:
+        - name: kiali
+          image: kiali/kiali:v1.42
+          ports:
+            - containerPort: 20001
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kiali
+  namespace: {{ .Values.global.namespace }}
+spec:
+  ports:
+    - port: 20001
+      targetPort: 20001
+  selector:
+    app: kiali

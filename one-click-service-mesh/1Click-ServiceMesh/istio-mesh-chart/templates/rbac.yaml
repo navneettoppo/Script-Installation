@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: {{ .Values.global.namespace }}
+  name: istio-role
+rules:
+- apiGroups: ["networking.istio.io"]
+  resources: ["virtualservices", "destinationrules"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  namespace: {{ .Values.global.namespace }}
+  name: istio-rolebinding
+subjects:
+- kind: User
+  name: "istio-user"
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: istio-role
+  apiGroup: rbac.authorization.k8s.io

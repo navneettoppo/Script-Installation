@@ -1,0 +1,51 @@
+# Global settings
+global:
+  namespace: istio-system
+
+# Istio settings
+istio:
+  enabled: true
+  sidecarInjectorWebhook:
+    enabled: true
+
+# Kiali settings
+kiali:
+  enabled: true
+
+# Grafana settings
+grafana:
+  enabled: true
+
+# Prometheus settings
+prometheus:
+  enabled: true
+
+# Jaeger settings
+jaeger:
+  enabled: true
+
+# BookInfo application settings
+bookinfo:
+  enabled: true
+
+# mTLS settings
+mtls:
+  enabled: true
+
+# RBAC settings
+rbac:
+  enabled: true
+  user: "istio-user"
+
+# Traffic Management settings
+trafficManagement:
+  enabled: true
+  loadBalancer: ROUND_ROBIN
+  canary:
+    v1Weight: 90
+    v2Weight: 10
+  circuitBreaker:
+    consecutiveErrors: 5
+    interval: 1s
+    baseEjectionTime: 3m
+    maxEjectionPercent: 50

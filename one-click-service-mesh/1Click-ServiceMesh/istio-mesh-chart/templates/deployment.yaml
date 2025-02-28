@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "istio-mesh-chart.fullname" . }}
+  labels:
+    {{- include "istio-mesh-chart.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "istio-mesh-chart.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "istio-mesh-chart.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "istio/proxyv2:{{ .Chart.AppVersion }}"
+          ports:
+            - containerPort: 8080
+      # Add the mTLS configuration
+      annotations:
+        sidecar.istio.io/inject: "true"
